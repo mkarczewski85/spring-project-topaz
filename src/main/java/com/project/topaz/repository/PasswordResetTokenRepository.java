@@ -1,5 +1,6 @@
 package com.project.topaz.repository;
 
+import com.project.topaz.model.PasswordResetToken;
 import com.project.topaz.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,18 +12,18 @@ import java.util.Date;
 import java.util.stream.Stream;
 
 @Repository
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetTokenRepository, Long> {
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
 
-    PasswordResetTokenRepository findByToken(String token);
+    PasswordResetToken findByToken(String token);
 
-    PasswordResetTokenRepository findByUser(User user);
+    PasswordResetToken findByUser(User user);
 
-    Stream<PasswordResetTokenRepository> findAllByExpiryDateLessThan(Date now);
+    Stream<PasswordResetToken> findAllByExpiryDateLessThan(Date now);
 
     void deleteByExpiryDateLessThan(Date now);
 
     @Modifying
-    @Query("delete from PasswordResetTokenRepository t where t.expiryDate <= :now")
+    @Query("DELETE FROM PasswordResetToken t WHERE t.expiryDate <= :now")
     void deleteAllExpiredSince(@Param("now") Date now);
 
 }

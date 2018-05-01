@@ -1,9 +1,6 @@
 package com.project.topaz.model;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -13,6 +10,7 @@ import java.util.List;
 @Entity
 @Table(name = "user_account")
 @Data
+@Builder
 public class User implements Serializable {
 
     @Id
