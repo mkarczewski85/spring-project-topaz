@@ -23,9 +23,9 @@ import java.util.UUID;
 @Transactional
 public class UserServiceImpl implements UserService {
 
-    public static final String TOKEN_INVALID = "invalidToken";
-    public static final String TOKEN_EXPIRED = "expired";
-    public static final String TOKEN_VALID = "valid";
+    private static final String TOKEN_INVALID = "invalidToken";
+    private static final String TOKEN_EXPIRED = "expired";
+    private static final String TOKEN_VALID = "valid";
 
     private UserRepository userRepository;
     private RoleRepository roleRepository;
@@ -78,13 +78,11 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(User user) {
 
         VerificationToken verificationToken = verificationTokenRepository.findByUser(user);
-
         if (verificationToken != null) {
             verificationTokenRepository.delete(verificationToken);
         }
 
         PasswordResetToken passwordToken = passwordResetTokenRepository.findByUser(user);
-
         if (passwordToken != null) {
             passwordResetTokenRepository.delete(passwordToken);
         }
