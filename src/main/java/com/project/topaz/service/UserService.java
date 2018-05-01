@@ -6,6 +6,8 @@ import com.project.topaz.model.VerificationToken;
 import com.project.topaz.web.dto.UserDto;
 import com.project.topaz.web.error.UserAlreadyExistException;
 
+import java.util.List;
+
 public interface UserService {
 
     User registerNewUserAccount(UserDto accountDto) throws UserAlreadyExistException;
@@ -38,4 +40,5 @@ public interface UserService {
 
     String validateVerificationToken(String token);
 
+    List<String> getUsersFromSessionRegistry();
 }

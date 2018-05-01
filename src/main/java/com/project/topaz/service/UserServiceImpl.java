@@ -10,14 +10,13 @@ import com.project.topaz.repository.VerificationTokenRepository;
 import com.project.topaz.web.dto.UserDto;
 import com.project.topaz.web.error.UserAlreadyExistException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -32,16 +31,19 @@ public class UserServiceImpl implements UserService {
     private VerificationTokenRepository verificationTokenRepository;
     private PasswordResetTokenRepository passwordResetTokenRepository;
     private PasswordEncoder passwordEncoder;
+    private SessionRegistry sessionRegistry;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
                            VerificationTokenRepository verificationTokenRepository,
-                           PasswordResetTokenRepository passwordResetTokenRepository, PasswordEncoder passwordEncoder) {
+                           PasswordResetTokenRepository passwordResetTokenRepository,
+                           PasswordEncoder passwordEncoder, SessionRegistry sessionRegistry) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sessionRegistry = sessionRegistry;
     }
 
     @Override
@@ -166,6 +168,12 @@ public class UserServiceImpl implements UserService {
         user.setEnabled(true);
         userRepository.save(user);
         return TOKEN_VALID;
+    }
+
+    @Override
+    public List<String> getUsersFromSessionRegistry() {
+        return sessionRegistry.getAllPrincipals().stream().filter((u) -> !sessionRegistry.getAllSessions(u, false)
+                .isEmpty()).map(Object::toString).collect(Collectors.toList());
     }
 
     private boolean emailExists(String email) {
