@@ -15,6 +15,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ComponentScan(basePackages = {"com.project.topaz.config.security"})
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
+    public SecurityConfig() {
+        super();
+    }
+
+    // Beans
+
     @Bean
     public PasswordEncoder encoder() {
         return new BCryptPasswordEncoder(11);
