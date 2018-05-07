@@ -3,6 +3,7 @@ package com.project.topaz.web.controller;
 import com.project.topaz.model.Privilege;
 import com.project.topaz.model.Role;
 import com.project.topaz.model.User;
+import com.project.topaz.model.VerificationToken;
 import com.project.topaz.registration.OnRegistrationCompleteEvent;
 import com.project.topaz.service.SecurityUserService;
 import com.project.topaz.service.UserService;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
 import org.springframework.core.env.Environment;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -30,12 +32,13 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Controller
 public class RegistrationController {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(getClass());
+    private Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     private UserService userService;
     private SecurityUserService securityUserService;
@@ -71,8 +74,7 @@ public class RegistrationController {
     }
 
     @GetMapping("/registrationConfirm")
-    public String confirmRegistration(HttpServletRequest request, Model model, @RequestParam("token") String token)
-            throws UnsupportedEncodingException {
+    public String confirmRegistration(HttpServletRequest request, Model model, @RequestParam("token") String token) {
         Locale locale = request.getLocale();
         String result = userService.validateVerificationToken(token);
         if (result.equals("valid")) {
@@ -88,9 +90,33 @@ public class RegistrationController {
         return "redirect:/badUser.html?lang=" + locale.getLanguage();
     }
 
+    @GetMapping("/user/resendRegistrationToken")
+    @ResponseBody
+    public GenericResponse resendVerificationToken(HttpServletRequest request, @RequestParam("token")
+            String existingToken) {
+
+        VerificationToken newToken = userService.generateNewVerificationToken(existingToken);
+        User user = userService.getUser(newToken.getToken());
+        mailSender.send(createResendVerificationTokenEmail(getAppUrl(request), request.getLocale(), newToken, user));
+        return new GenericResponse(messageSource.getMessage("message.resendToken", null, request.getLocale()));
+    }
+
+    @PostMapping("/user/resetPassword")
+    @ResponseBody
+    public GenericResponse resetPassword(HttpServletRequest request, @RequestParam("email") String userEmail) {
+        User user = userService.findUserByEmail(userEmail);
+        if (user != null) {
+            String token = UUID.randomUUID().toString();
+            userService.createPasswordResetTokenForUser(user, token);
+            mailSender.send(createResetTokenEmail(getAppUrl(request), request.getLocale(), token, user));
+        }
+        return new GenericResponse(messageSource.getMessage("message.resetPasswordEmail", null,
+                request.getLocale()));
+    }
+
+
 
     // NON API
-
     private String getAppUrl(HttpServletRequest request) {
         return "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
     }
@@ -102,8 +128,30 @@ public class RegistrationController {
                 new SimpleGrantedAuthority(p.getName())).collect(Collectors.toList());
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
     }
+
+    private SimpleMailMessage createResendVerificationTokenEmail(String contextPath, Locale locale,
+                                                                 VerificationToken newToken, User user) {
+        String confirmationUrl = contextPath + "/registrationConfirm.html?token=" + newToken.getToken();
+        String message = messageSource.getMessage("message.resendToken", null, locale);
+        return constructEmail("Resend Registration Token", message + " \r\n" + confirmationUrl, user);
+    }
+
+    private SimpleMailMessage createResetTokenEmail(String contextPath, Locale locale, String token, User user) {
+        String url = contextPath + "/user/changePassword?id=" + user.getId() + "&token=" + token;
+        String message = messageSource.getMessage("message.resetPassword", null, locale);
+        return constructEmail("Reset Password", message + " \r\n" + url, user);
+    }
+
+    private SimpleMailMessage constructEmail(String subject, String body, User user) {
+        SimpleMailMessage email = new SimpleMailMessage();
+        email.setSubject(subject);
+        email.setText(body);
+        email.setTo(user.getEmail());
+        email.setFrom(environment.getProperty("support.email"));
+        return email;
+    }
+
+
 }
