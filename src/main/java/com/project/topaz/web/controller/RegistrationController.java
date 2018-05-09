@@ -66,7 +66,7 @@ public class RegistrationController {
     @PostMapping("/user/registration")
     @ResponseBody
     public GenericResponse registerUserAccount(@Valid UserDto accountDto, HttpServletRequest request) {
-        LOGGER.debug("Registering of user account. Provided information: {}", accountDto);
+        LOGGER.debug("Registering user account. Provided information: {}", accountDto);
         User registeredUser = userService.registerNewUserAccount(accountDto);
         eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registeredUser, request.getLocale(),
                 getAppUrl(request)));
@@ -114,6 +114,17 @@ public class RegistrationController {
                 request.getLocale()));
     }
 
+    @GetMapping("/user/changePassword")
+    public String showChangePasswordPage(Locale locale, Model model, @RequestParam("id") Long id,
+                                         @RequestParam("token") String token) {
+
+        String result = securityUserService.validatePasswordResetToken(id, token);
+        if (result != null) {
+            model.addAttribute("message", messageSource.getMessage("auth.message." + result, null, locale));
+            return "redirect:/login?lang=" + locale.getLanguage();
+        }
+        return "redirect:/updatePassword.html?lang=" + locale.getLanguage();
+    }
 
 
     // NON API
