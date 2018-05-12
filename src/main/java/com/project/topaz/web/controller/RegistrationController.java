@@ -7,7 +7,9 @@ import com.project.topaz.model.VerificationToken;
 import com.project.topaz.registration.OnRegistrationCompleteEvent;
 import com.project.topaz.service.SecurityUserService;
 import com.project.topaz.service.UserService;
+import com.project.topaz.web.dto.PasswordDto;
 import com.project.topaz.web.dto.UserDto;
+import com.project.topaz.web.error.InvalidOldPasswordException;
 import com.project.topaz.web.utils.GenericResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,8 +128,28 @@ public class RegistrationController {
         return "redirect:/updatePassword.html?lang=" + locale.getLanguage();
     }
 
+    @PostMapping("/user/savePassword")
+    @ResponseBody
+    public GenericResponse savePassword(Locale locale, @Valid PasswordDto passwordDto) {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        userService.changeUserPassword(user, passwordDto.getNewPassword());
+        return new GenericResponse(messageSource.getMessage("message.resetPasswordSuc", null, locale));
+    }
 
-    // NON API
+    @PostMapping("/user/updatePassword")
+    @ResponseBody
+    public GenericResponse changeUserPassword(Locale locale, @Valid PasswordDto passwordDto) {
+        String email = ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getEmail();
+        User user = userService.findUserByEmail(email);
+        if (!userService.checkIfValidOldPassword(user, passwordDto.getOldPassword())) {
+            throw new InvalidOldPasswordException();
+        }
+        userService.changeUserPassword(user, passwordDto.getNewPassword());
+        return new GenericResponse(messageSource.getMessage("message.updatePasswordSuc", null, locale));
+    }
+
+
+    // NON API (TODO: move to other util class)
     private String getAppUrl(HttpServletRequest request) {
         return "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
     }
