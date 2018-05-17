@@ -16,15 +16,15 @@ import java.util.UUID;
 public class RegistrationListener implements ApplicationListener<OnRegistrationCompleteEvent> {
 
     private UserService userService;
-    private MessageSource messages;
+    private MessageSource messageSource;
     private JavaMailSender mailSender;
     private Environment environment;
 
     @Autowired
-    public RegistrationListener(UserService userService, MessageSource messages, JavaMailSender mailSender,
+    public RegistrationListener(UserService userService, MessageSource messageSource, JavaMailSender mailSender,
                                 Environment environment) {
         this.userService = userService;
-        this.messages = messages;
+        this.messageSource = messageSource;
         this.mailSender = mailSender;
         this.environment = environment;
     }
@@ -46,7 +46,7 @@ public class RegistrationListener implements ApplicationListener<OnRegistrationC
         String recipientAddress = user.getEmail();
         String subject = "Registration Confirmation";
         String confirmationUrl = event.getAppUrl() + "/registrationConfirm.html?token=" + token;
-        String message = messages.getMessage("message.regSucc", null, event.getLocale());
+        String message = messageSource.getMessage("message.regSucc", null, event.getLocale());
         SimpleMailMessage email = new SimpleMailMessage();
         email.setTo(recipientAddress);
         email.setSubject(subject);
