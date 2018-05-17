@@ -37,6 +37,8 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
 @Controller
 public class RegistrationController {
 
@@ -67,7 +69,7 @@ public class RegistrationController {
 
     @PostMapping("/user/registration")
     @ResponseBody
-    public GenericResponse registerUserAccount(@Valid UserDto accountDto, HttpServletRequest request) {
+    public GenericResponse registerUserAccount(@RequestBody @Valid UserDto accountDto, HttpServletRequest request) {
         LOGGER.debug("Registering user account. Provided information: {}", accountDto);
         User registeredUser = userService.registerNewUserAccount(accountDto);
         eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registeredUser, request.getLocale(),

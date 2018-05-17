@@ -9,8 +9,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "user_account")
-@Data
+@Getter
+@Setter
 @Builder
+@AllArgsConstructor
 public class User implements Serializable {
 
     @Id
