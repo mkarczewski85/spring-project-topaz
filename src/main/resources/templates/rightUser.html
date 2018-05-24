@@ -1,0 +1,17 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css"/>
+</head>
+<body>
+
+<div class="container">
+    <h4>
+        <div th:if="${param.message != null}" class="alert alert-info center-block text-center" th:text="${param.message[0]}">message</div>
+    </h4>
+</div>
+
+</body>
+
+</html>
