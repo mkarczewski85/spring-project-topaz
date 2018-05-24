@@ -82,7 +82,7 @@ public class RegistrationController {
             User user = userService.getUser(token);
             authWithoutPassword(user);
             model.addAttribute("message", messageSource.getMessage("message.accountVerified", null, locale));
-            return "redirect:/console.html?lang=" + locale.getLanguage();
+            return "redirect:/rightUser.html?lang=" + locale.getLanguage();
         }
 
         model.addAttribute("message", messageSource.getMessage("auth.message." + result, null, locale));
