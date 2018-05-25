@@ -79,8 +79,6 @@ public class RegistrationController {
         Locale locale = request.getLocale();
         String result = userService.validateVerificationToken(token);
         if (result.equals("valid")) {
-            User user = userService.getUser(token);
-            authWithoutPassword(user);
             model.addAttribute("message", messageSource.getMessage("message.accountVerified", null, locale));
             return "redirect:/rightUser.html?lang=" + locale.getLanguage();
         }
