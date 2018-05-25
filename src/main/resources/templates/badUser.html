@@ -9,7 +9,7 @@
 <div class="container">
     <h4>
         <div th:if="${param.message} != null" class="alert alert-danger center-block text-center" th:text="${param.message[0]}">error</div>
-        <div th:if="${param.expired} != null" class="alert alert-danger center-block text-center">
+        <div th:if="${param.expired} == 'true'" class="alert alert-info center-block text-center">
             <a th:href="@{/user/resendRegistrationToken?token={token}(token=${param.token})}">Resend verification token</a>
         </div>
     </h4>

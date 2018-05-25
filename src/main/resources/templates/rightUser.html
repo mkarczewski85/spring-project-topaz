@@ -8,7 +8,10 @@
 
 <div class="container">
     <h4>
-        <div th:if="${param.message != null}" class="alert alert-info center-block text-center" th:text="${param.message[0]}">message</div>
+        <div th:if="${param.message != null}" class="alert alert-success center-block text-center" th:text="${param.message[0]}">message</div>
+        <div th:if="${param.message != null}" class="alert alert-info center-block text-center">
+            <a th:href="${www.google.com}">Now you can sign-in</a>
+        </div>
     </h4>
 </div>
 
