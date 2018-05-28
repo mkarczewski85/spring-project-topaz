@@ -32,6 +32,8 @@ public class MvcConfig extends WebMvcConfigurerAdapter {
         super.addViewControllers(registry);
         registry.addViewController("/rightUser.html");
         registry.addViewController("/badUser.html");
+        registry.addViewController("/updatePassword.html");
+        registry.addViewController("/registrationConfirm.html");
 
     }
 

@@ -31,7 +31,7 @@ public class SecurityUserServiceImpl implements SecurityUserService {
     public String validatePasswordResetToken(Long id, String token) {
 
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token);
-        if ((resetToken == null) || (resetToken.getUser().getId() != id)) {
+        if ((resetToken == null) || (!resetToken.getUser().getId().equals(id))) {
             return "InvalidToken";
         }
 

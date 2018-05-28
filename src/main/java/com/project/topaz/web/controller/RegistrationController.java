@@ -71,7 +71,7 @@ public class RegistrationController {
         User registeredUser = userService.registerNewUserAccount(accountDto);
         eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registeredUser, request.getLocale(),
                 getAppUrl(request)));
-        return new GenericResponse("succes");
+        return new GenericResponse("success");
     }
 
     @GetMapping("/registrationConfirm")
@@ -120,14 +120,14 @@ public class RegistrationController {
         String result = securityUserService.validatePasswordResetToken(id, token);
         if (result != null) {
             model.addAttribute("message", messageSource.getMessage("auth.message." + result, null, locale));
-            return "redirect:/login?lang=" + locale.getLanguage();
+            return "redirect:/badUser?lang=" + locale.getLanguage();
         }
         return "redirect:/updatePassword.html?lang=" + locale.getLanguage();
     }
 
-    @PostMapping("/user/savePassword")
+    @PostMapping("/user/setPassword")
     @ResponseBody
-    public GenericResponse savePassword(Locale locale, @Valid PasswordDto passwordDto) {
+    public GenericResponse setNewPassword(Locale locale, @Valid PasswordDto passwordDto) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         userService.changeUserPassword(user, passwordDto.getNewPassword());
         return new GenericResponse(messageSource.getMessage("message.resetPasswordSuc", null, locale));
