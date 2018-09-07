@@ -12,7 +12,7 @@ public interface UserService {
 
     User registerNewUserAccount(UserDto accountDto) throws UserAlreadyExistException;
 
-    User getUser(String verificationToken);
+    User getUserByVerificationToken(String verificationToken);
 
     void saveRegisteredUser(User user);
 
@@ -31,6 +31,8 @@ public interface UserService {
     PasswordResetToken getPasswordResetToken(String token);
 
     User getUserByPasswordResetToken(String token);
+
+    String validatePasswordResetToken(Long id, String token);
 
     User getUserByID(long id);
 

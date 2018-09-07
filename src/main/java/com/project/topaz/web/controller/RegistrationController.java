@@ -1,28 +1,21 @@
 package com.project.topaz.web.controller;
 
-import com.project.topaz.model.Privilege;
-import com.project.topaz.model.Role;
 import com.project.topaz.model.User;
 import com.project.topaz.model.VerificationToken;
 import com.project.topaz.registration.OnRegistrationCompleteEvent;
-import com.project.topaz.service.SecurityUserService;
 import com.project.topaz.service.UserService;
 import com.project.topaz.web.dto.PasswordDto;
 import com.project.topaz.web.dto.UserDto;
 import com.project.topaz.web.error.InvalidOldPasswordException;
+import com.project.topaz.web.utils.EmailUtils;
 import com.project.topaz.web.utils.GenericResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.MessageSource;
-import org.springframework.core.env.Environment;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,11 +23,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Controller
 public class RegistrationController {
@@ -42,26 +32,23 @@ public class RegistrationController {
     private Logger LOGGER = LoggerFactory.getLogger(getClass());
 
     private UserService userService;
-    private SecurityUserService securityUserService;
     private MessageSource messageSource;
     private JavaMailSender mailSender;
     private ApplicationEventPublisher eventPublisher;
-    private Environment environment;
+    private EmailUtils emailUtils;
 
     // API
 
     // registration process
 
     @Autowired
-    public RegistrationController(UserService userService, SecurityUserService securityUserService,
-                                  MessageSource messageSource, JavaMailSender mailSender,
-                                  ApplicationEventPublisher eventPublisher, Environment environment) {
+    public RegistrationController(UserService userService, MessageSource messageSource, JavaMailSender mailSender,
+                                  ApplicationEventPublisher eventPublisher, EmailUtils emailUtils) {
         this.userService = userService;
-        this.securityUserService = securityUserService;
         this.messageSource = messageSource;
         this.mailSender = mailSender;
         this.eventPublisher = eventPublisher;
-        this.environment = environment;
+        this.emailUtils = emailUtils;
     }
 
     @PostMapping("/user/registration")
@@ -95,8 +82,10 @@ public class RegistrationController {
             String existingToken) {
 
         VerificationToken newToken = userService.generateNewVerificationToken(existingToken);
-        User user = userService.getUser(newToken.getToken());
-        mailSender.send(createResendVerificationTokenEmail(getAppUrl(request), request.getLocale(), newToken, user));
+        User user = userService.getUserByVerificationToken(newToken.getToken());
+        SimpleMailMessage mailMsg = emailUtils.createResendVerificationTokenEmail(getAppUrl(request),
+                request.getLocale(), newToken, user);
+        mailSender.send(mailMsg);
         return new GenericResponse(messageSource.getMessage("message.resendToken", null, request.getLocale()));
     }
 
@@ -107,7 +96,9 @@ public class RegistrationController {
         if (user != null) {
             String token = UUID.randomUUID().toString();
             userService.createPasswordResetTokenForUser(user, token);
-            mailSender.send(createResetTokenEmail(getAppUrl(request), request.getLocale(), token, user));
+            SimpleMailMessage mailMsg = emailUtils.createResetTokenEmail(getAppUrl(request), request.getLocale(),
+                    token, user);
+            mailSender.send(mailMsg);
         }
         return new GenericResponse(messageSource.getMessage("message.resetPasswordEmail", null,
                 request.getLocale()));
@@ -117,7 +108,7 @@ public class RegistrationController {
     public String showChangePasswordPage(Locale locale, Model model, @RequestParam("id") Long id,
                                          @RequestParam("token") String token) {
 
-        String result = securityUserService.validatePasswordResetToken(id, token);
+        String result = userService.validatePasswordResetToken(id, token);
         if (result != null) {
             model.addAttribute("message", messageSource.getMessage("auth.message." + result, null, locale));
             return "redirect:/badUser?lang=" + locale.getLanguage();
@@ -146,42 +137,9 @@ public class RegistrationController {
     }
 
 
-    // NON API (TODO: move to other util class)
+    // NON API
     private String getAppUrl(HttpServletRequest request) {
         return "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
     }
-
-    private void authWithoutPassword(User user) {
-        List<Privilege> privileges = user.getRoles().stream().map(Role::getPrivileges).flatMap(Collection::stream)
-                .distinct().collect(Collectors.toList());
-        List<GrantedAuthority> authorities = privileges.stream().map(p ->
-                new SimpleGrantedAuthority(p.getName())).collect(Collectors.toList());
-
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-    }
-
-    private SimpleMailMessage createResendVerificationTokenEmail(String contextPath, Locale locale,
-                                                                 VerificationToken newToken, User user) {
-        String confirmationUrl = contextPath + "/registrationConfirm.html?token=" + newToken.getToken();
-        String message = messageSource.getMessage("message.resendToken", null, locale);
-        return constructEmail("Resend Registration Token", message + " \r\n" + confirmationUrl, user);
-    }
-
-    private SimpleMailMessage createResetTokenEmail(String contextPath, Locale locale, String token, User user) {
-        String url = contextPath + "/user/changePassword?id=" + user.getId() + "&token=" + token;
-        String message = messageSource.getMessage("message.resetPassword", null, locale);
-        return constructEmail("Reset Password", message + " \r\n" + url, user);
-    }
-
-    private SimpleMailMessage constructEmail(String subject, String body, User user) {
-        SimpleMailMessage email = new SimpleMailMessage();
-        email.setSubject(subject);
-        email.setText(body);
-        email.setTo(user.getEmail());
-        email.setFrom(environment.getProperty("support.email"));
-        return email;
-    }
-
 
 }

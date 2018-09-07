@@ -10,6 +10,10 @@ import com.project.topaz.repository.VerificationTokenRepository;
 import com.project.topaz.web.dto.UserDto;
 import com.project.topaz.web.error.UserAlreadyExistException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -63,7 +67,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(String verificationToken) {
+    public User getUserByVerificationToken(String verificationToken) {
         VerificationToken token = verificationTokenRepository.findByToken(verificationToken);
         if (token != null) {
             return token.getUser();
@@ -115,6 +119,26 @@ public class UserServiceImpl implements UserService {
     public void createPasswordResetTokenForUser(User user, String token) {
         PasswordResetToken myToken = new PasswordResetToken(token, user);
         passwordResetTokenRepository.save(myToken);
+    }
+
+    @Override
+    public String validatePasswordResetToken(Long id, String token) {
+
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token);
+        if ((resetToken == null) || (!resetToken.getUser().getId().equals(id))) {
+            return "InvalidToken";
+        }
+
+        Calendar calendar = Calendar.getInstance();
+        if ((resetToken.getExpiryDate().getTime() - calendar.getTime().getTime()) <= 0) {
+            return "Expired";
+        }
+
+        User user = resetToken.getUser();
+        Authentication auth = new UsernamePasswordAuthenticationToken(user, null,
+                Arrays.asList(new SimpleGrantedAuthority("CHANGE_PASSWORD_PRIVILEGE")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        return null;
     }
 
     @Override

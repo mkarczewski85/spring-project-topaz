@@ -2,10 +2,9 @@ package com.project.topaz.registration;
 
 import com.project.topaz.model.User;
 import com.project.topaz.service.UserService;
+import com.project.topaz.web.utils.EmailUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.MessageSource;
-import org.springframework.core.env.Environment;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -16,17 +15,14 @@ import java.util.UUID;
 public class RegistrationListener implements ApplicationListener<OnRegistrationCompleteEvent> {
 
     private UserService userService;
-    private MessageSource messageSource;
     private JavaMailSender mailSender;
-    private Environment environment;
+    private EmailUtils emailUtils;
 
     @Autowired
-    public RegistrationListener(UserService userService, MessageSource messageSource, JavaMailSender mailSender,
-                                Environment environment) {
+    public RegistrationListener(UserService userService, JavaMailSender mailSender, EmailUtils emailUtils) {
         this.userService = userService;
-        this.messageSource = messageSource;
         this.mailSender = mailSender;
-        this.environment = environment;
+        this.emailUtils = emailUtils;
     }
 
     @Override
@@ -38,20 +34,8 @@ public class RegistrationListener implements ApplicationListener<OnRegistrationC
         User user = event.getUser();
         String token = UUID.randomUUID().toString();
         userService.createVerificationTokenForUser(user, token);
-        SimpleMailMessage emailMessage = createEmailMessage(event, user, token);
-        mailSender.send(emailMessage);
+        SimpleMailMessage emailMsg = emailUtils.createVerificationTokenEmail(event, user, token);
+        mailSender.send(emailMsg);
     }
 
-    private SimpleMailMessage createEmailMessage(OnRegistrationCompleteEvent event, User user, String token) {
-        String recipientAddress = user.getEmail();
-        String subject = "Registration Confirmation";
-        String confirmationUrl = event.getAppUrl() + "/registrationConfirm.html?token=" + token;
-        String message = messageSource.getMessage("message.regSucc", null, event.getLocale());
-        SimpleMailMessage email = new SimpleMailMessage();
-        email.setTo(recipientAddress);
-        email.setSubject(subject);
-        email.setText(message + " \r\n" + confirmationUrl);
-        email.setFrom(environment.getProperty("support.email"));
-        return email;
-    }
 }
